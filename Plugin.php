@@ -4,10 +4,16 @@ namespace TypechoPlugin\YiYan;
 
 use Typecho\Plugin\PluginInterface;
 use Typecho\Widget\Helper\Form;
+use Typecho\Widget\Helper\Form\Element\Select;
+use Typecho\Widget\Helper\Form\Element\Text;
+use Widget\Options;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) {
     exit;
 }
+
+const JINRISHICI = 'jinrishici';
+const HITOKOTO = 'hitokoto';
 
 /**
  * 每次刷新管理后台页面，都在页面顶部随机显示一句话。
@@ -41,6 +47,20 @@ class Plugin implements PluginInterface
      */
     public static function config(Form $form)
     {
+        $type = new Select('type', array(
+            HITOKOTO => '一言',
+            JINRISHICI => '今日诗词',
+        ), HITOKOTO, _t('一言类型'));
+        $form->addInput($type);
+
+        $params = new Text(
+            'params',
+            null,
+            null,
+            _t('URL 参数，如：c=i&token=xxx'),
+            _t('URL 参数根据情况选填。参数详情见：<a href="https://developer.hitokoto.cn/sentence/#%E8%AF%B7%E6%B1%82%E5%8F%82%E6%95%B0">一言</a>、<a href="https://www.jinrishici.com/doc/">今日诗词</a>')
+        );
+        $form->addInput($params);
     }
 
     /**
@@ -60,9 +80,22 @@ class Plugin implements PluginInterface
      */
     public static function render()
     {
-        $api = "https://v1.hitokoto.cn";
-        $data = json_decode(file_get_contents($api), true);
-        $message = $data['hitokoto'] . ' —— ' . $data['from'];
+        $message = '404: Not Found';
+        $params = Options::alloc()->plugin('YiYan')->params;
+        if (!empty($params)) {
+            $params = '?' . trim($params, "?");
+        }
+
+        $type = Options::alloc()->plugin('YiYan')->type;
+        if ($type == JINRISHICI) {
+            $api = 'https://v2.jinrishici.com/one.json' . $params;
+            $data = json_decode(file_get_contents($api), true);
+            $message = $data['data']['content'] . ' ——' . $data['data']['origin']['title'];
+        } else if ($type == HITOKOTO) {
+            $api = "https://v1.hitokoto.cn" . $params;
+            $data = json_decode(file_get_contents($api), true);
+            $message = $data['hitokoto'] . ' —— ' . $data['from'];
+        }
         echo '<span class="message success">' . htmlspecialchars($message) . '</span>';
     }
 }
