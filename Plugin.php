@@ -94,7 +94,7 @@ class Plugin implements PluginInterface
         } else if ($type == HITOKOTO) {
             $api = "https://v1.hitokoto.cn" . $params;
             $data = json_decode(file_get_contents($api), true);
-            $message = $data['hitokoto'] . ' —— ' . $data['from'];
+            $message = $data['hitokoto'] . ' ——' . $data['from'];
         }
         echo '<span class="message success">' . htmlspecialchars($message) . '</span>';
     }
